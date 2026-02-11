@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chop Zit VIP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { background: #050505; color: white; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .neon-text { color: #00ffcc; text-shadow: 0 0 10px rgba(0,255,204,0.5); }
+        .vip-card { background: #0f0f0f; border: 1px solid #222; border-radius: 15px; padding: 15px; }
+        .modal { position: fixed; inset: 0; z-index: 100; background: #000; display: none; padding: 15px; overflow-y: auto; }
+        .modal.active { display: block; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .btn-main { background: #00ffcc; color: #000; font-weight: 900; padding: 12px; border-radius: 10px; width: 100%; transition: 0.2s; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen" class="fixed inset-0 z-[200] bg-black flex items-center justify-center p-6">
+        <div class="vip-card w-full max-w-sm text-center border-[#00ffcc]/30">
+            <h1 class="text-3xl font-black mb-6 neon-text">CHOP ZIT VIP</h1>
+            <input type="text" id="reg-nick" placeholder="الاسم" class="w-full bg-black border border-zinc-800 p-4 rounded-xl mb-3 text-center">
+            <input type="tel" id="reg-phone" placeholder="رقم الهاتف" class="w-full bg-black border border-zinc-800 p-4 rounded-xl mb-6 text-center">
+            <button onclick="register()" class="btn-main">دخول السيرفر</button>
+        </div>
+    </div>
+
+    <header class="p-4 flex justify-between items-center border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-md z-50">
+        <div class="neon-text font-black text-lg">CHOP ZIT</div>
+        <div class="flex flex-col items-end">
+            <span class="text-[10px] text-zinc-500">رصيدك</span>
+            <span id="user-balance" class="text-white font-bold text-sm">0 🪙</span>
+        </div>
+    </header>
+
+    <main class="p-4 space-y-4">
+        <div class="vip-card text-center border-[#00ffcc]/20">
+            <div id="codes-display" class="bg-black p-3 rounded-lg h-20 mb-3 text-[#00ffcc] font-mono text-sm flex items-center justify-center border border-zinc-900">...</div>
+            <button onclick="startGuessing()" class="btn-main text-xs py-3">بدء التخمين</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+            <div onclick="openPage('hacks')" class="vip-card text-center border-red-500/20 active:scale-95 transition-all">
+                <span class="text-2xl block">🚀</span>
+                <p class="text-[11px] font-bold mt-2">الهاكات المميزة</p>
+            </div>
+            <div onclick="openPage('games')" class="vip-card text-center border-blue-500/20 active:scale-95 transition-all">
+                <span class="text-2xl block">🎮</span>
+                <p class="text-[11px] font-bold mt-2">شحن الألعاب</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="page-modal" class="modal">
+        <div class="flex justify-between items-center mb-6 sticky top-0 bg-black py-2">
+            <h2 id="modal-title" class="neon-text font-black text-lg"></h2>
+            <button onclick="closePage()" class="text-zinc-400 text-sm">إغلاق ✕</button>
+        </div>
+        <div id="offers-container" class="space-y-4 pb-10"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBA7Fqc6f2tgDNqa7lomWHZljzBuxLSSL8",
+            authDomain: "projectfghh.firebaseapp.com",
+            databaseURL: "https://projectfghh-default-rtdb.firebaseio.com",
+            projectId: "projectfghh"
+        };
+
+        const db = getDatabase(initializeApp(firebaseConfig));
+        const phone = localStorage.getItem('chop_phone');
+
+        onValue(ref(db, 'CHOP_VIP/users'), snap => {
+            const users = snap.val() || {};
+            if(phone && users[phone]) {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('user-balance').innerText = users[phone].balance + " 🪙";
+            }
+        });
+
+        window.openPage = (type) => {
+            const modal = document.getElementById('page-modal');
+            const container = document.getElementById('offers-container');
+            document.getElementById('modal-title').innerText = type === 'hacks' ? 'الهاكات' : 'شحن الألعاب';
+            modal.classList.add('active');
+            
+            onValue(ref(db, 'CHOP_VIP/offers/' + type), snap => {
+                container.innerHTML = "";
+                snap.forEach(child => {
+                    const item = child.val();
+                    container.innerHTML += `
+                        <div class="vip-card border-zinc-800 p-0 overflow-hidden">
+                            <img src="${item.image}" class="w-full h-40 object-cover">
+                            <div class="p-3">
+                                <h4 class="font-black text-sm mb-1">${item.title}</h4>
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-[#00ffcc] text-xs font-bold">${item.priceCoins} 🪙</span>
+                                    <span class="text-zinc-400 text-xs font-bold">${item.priceCash} ${item.currency}</span>
+                                </div>
+                                <a href="${item.link || '#'}" target="_blank" class="btn-main block text-center text-[10px]">طلب / تحميل الآن</a>
+                            </div>
+                        </div>`;
+                });
+            });
+        };
+
+        window.closePage = () => document.getElementById('page-modal').classList.remove('active');
+
+        window.register = () => {
+            const n = document.getElementById('reg-nick').value, p = document.getElementById('reg-phone').value;
+            if(n && p) { set(ref(db, 'CHOP_VIP/users/' + p), { nick: n, phone: p, balance: 0 }); localStorage.setItem('chop_phone', p); location.reload(); }
+        };
+
+        window.startGuessing = async () => {
+            const display = document.getElementById('codes-display');
+            const adminSettings = (await get(ref(db, 'CHOP_VIP/settings'))).val() || { codeCount: 3 };
+            let timer = 0;
+            const inter = setInterval(() => {
+                display.innerText = Math.random().toString(36).substring(2, 10).toUpperCase();
+                if(timer++ > 10) {
+                    clearInterval(inter);
+                    display.innerHTML = "";
+                    for(let i=0; i<adminSettings.codeCount; i++) display.innerHTML += Math.random().toString(36).substring(2, 10).toUpperCase() + "<br>";
+                }
+            }, 80);
+        };
+    </script>
+</body>
+</html>
